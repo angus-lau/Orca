@@ -1,21 +1,22 @@
 import h2o
+from models.dataset import Dataset
 from h2o.automl import H2OAutoML
+from h2o.frame import H2OFrame
 
 class Classifier:
-    def __init__(self, dataset, features, target, max_models=20, seed=42, test=.2, exclude=None):
+    def __init__(self, dataset, target, max_models=20, seed=42, test=.2, exclude=None):
         h2o.init()
-        self.dataset = dataset,
-        self.features = features,
-        self.target = target,
-        self.max_models = max_models,
-        self.seed = seed,
-        self.test = test,
+        self.dataset = dataset
+        self.target = target
+        self.max_models = max_models
+        self.seed = seed
+        self.test = test
         self.exclude = exclude
-        self.aml = None,
+        self.aml = None
         self.load_data()
 
     def load_data(self):
-        self.df = h2o.import_file(self.data_path)
+        self.df=H2OFrame(self.dataset)
         self.df[self.target] = self.df[self.target].asfactor()
         exclude = self.exclude + [self.target]
         self.features = [col for col in self.df.col_names if col not in exclude]
