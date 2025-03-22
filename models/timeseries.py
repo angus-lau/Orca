@@ -93,7 +93,8 @@ class TimeSeriesModel:
             for i in range(1, self.lags):
                 new_row[f"lag_{i}"] = input_data.get(f"lag_{i+1}", pred)
             new_row[f"lag_{self.lags}"] = pred
-            recent_df = recent_df.append(new_row, ignore_index=True)
+            recent_df = pd.concat([recent_df, pd.DataFrame([new_row])], ignore_index=True)
+
 
         return predictions
 
