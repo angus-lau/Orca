@@ -1,33 +1,40 @@
 import h2o
 from h2o.automl import H2OAutoML
 
-h2o.init()
-print('h2o started')
+class Classifier:
+    def __init__(self, dataset, features, target, max_models=20, seed=42, test=.2, exclude=None):
+        h2o.init()
+        self.dataset = dataset,
+        self.features = features,
+        self.target = target,
+        self.max_models = max_models,
+        self.seed = seed,
+        self.test = test,
+        self.exclude = exclude
+        self.aml = None,
+        self.load_data()
 
-# load data
-df = h2o.import_file('data/titanic_data.csv')
+    def load_data(self):
+        self.df = h2o.import_file(self.data_path)
+        self.df[self.target] = self.df[self.target].asfactor()
+        exclude = self.exclude + [self.target]
+        self.features = [col for col in self.df.col_names if col not in exclude]
+        self.train, self.test = self.df.split_frame(ratios=[0.8], seed=42)
 
-# set target column as factor so it knows to see values as categorial 
-df['Survived']  = df['Survived'].asfactor()
-
-# target and features
-x = [col for col in df.columns if col != 'Survived']
-y = 'Survived'
-
-# drop irrelvant columns
-x = [col for col in df.col_names if col not in ['PassengerId', 'Name', 'Ticket', 'Cabin']]
-
-# split data
-train, test = df.split_frame(ratio=[0.8], seed=42)
-
-# train AutoML
-aml = H2OAutoML(max_models=20, seed=1)
-aml.train(x=x, y=y, training_frame=train)
-
-# view leaderboard
-lb = aml.leaderboard
-print(lb.head(rows=lb.nrows))
-
-# The leader model is stored here
-preds = aml.leader.predict(test)
-print(preds.head())
+    def train_model(self, max_models=20, seed=1):
+        self.aml = H2OAutoML(max_models=max_models, seed=seed)
+        self.aml.train(x=self.features, y=self.target, training_frame=self.train)
+        self.lb = self.aml.leaderboard
+    
+    def show_leaderboard(self):
+        if self.lb is not None:
+            print(self.lb.head(rows=self.lb.nrows))
+        else:
+            print('No available leaderboard.')
+    
+    def predict(self):
+        if self.aml is not None:
+            preds = self.aml.leader.predict(self.test)
+            print(preds.head())
+        else:
+            print('Model not trained.')
