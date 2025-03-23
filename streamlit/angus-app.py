@@ -8,11 +8,11 @@ import json
 if "jobs" not in st.session_state:
     st.session_state.jobs = []
 if "datasets" not in st.session_state:
-    if os.path.exists("datasets.json"):
-        with open("datasets.json", "r") as f:
-            st.session_state.datasets = json.load(f)
-    else:
-        st.session_state.datasets = {}  # {filename: filepath}
+        if os.path.exists("datasets.json"):
+            with open("datasets.json", "r") as f:
+                st.session_state.datasets = json.load(f)
+        else:
+            st.session_state.datasets = {}  # {filename: filepath}
 
 def playground():
     st.title("Playground")
