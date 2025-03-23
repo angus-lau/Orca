@@ -12,7 +12,7 @@ class NLPModel:
         text_columns: List[str],
         target_column: str,
         max_models: int = 10,
-        max_runtime_secs: int = 60,
+        max_runtime_secs: int = 300,
         max_features: int = 500,
         seed: int = 42
     ):
