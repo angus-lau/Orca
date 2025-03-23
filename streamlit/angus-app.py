@@ -1,8 +1,15 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import streamlit as st
 import pandas as pd
 import uuid
-import os  # Add this to the top of the file
 import json
+from agents.task_classifier_agent import classify_task
+from agents.feature_mapper_agent import select_features
+from agents.model_executor_agent import ModelExecutorAgent
+from models.dataset import Dataset
+
 
 # Initialize session state
 if "jobs" not in st.session_state:
@@ -16,6 +23,16 @@ if "datasets" not in st.session_state:
 
 def playground():
     st.title("Playground")
+
+    # Refresh datasets from JSON file
+    if os.path.exists("datasets.json"):
+        try:
+            with open("datasets.json", "r") as f:
+                st.session_state.datasets = json.load(f)
+        except json.JSONDecodeError:
+            st.warning("Could not load datasets.json — file may be corrupted.")
+            st.session_state.datasets = {}
+
     prompt = st.text_area("Enter your prediction prompt here:")
 
     dataset_names = list(st.session_state.datasets.keys())
@@ -24,17 +41,47 @@ def playground():
     if st.button("Submit"):
         if prompt.strip() == "":
             st.warning("Please enter a prompt before submitting.")
+        elif selected_data not in st.session_state.datasets:
+            st.warning("Please select a valid dataset.")
         else:
-            job_id = str(uuid.uuid4())[:8]
-            job = {
-                "id": job_id,
-                "prompt": prompt,
-                "status": "Queued",
-                "progress": 0,
-                "dataset": selected_data
-            }
-            st.session_state.jobs.append(job)
-            st.success(f"Job '{prompt}' submitted! Check Jobs tab for progress.")
+            file_path = st.session_state.datasets[selected_data]
+            try:
+                if selected_data.endswith(".csv"):
+                    df = pd.read_csv(file_path)
+                    sel_ds = Dataset(st.session_state.datasets[selected_data])
+                elif selected_data.endswith(".xlsx"):
+                    df = pd.read_excel(file_path)
+                else:
+                    st.error("Unsupported file type.")
+                    return
+                print(prompt)
+                classification = classify_task(prompt, sel_ds.columns())
+                sel_features = select_features(prompt, sel_ds.columns(),classification['target_column'])
+
+                executor = ModelExecutorAgent(
+                    dataset=sel_ds,
+                    task_type=classification["task_type"],
+                    target_column=classification['target_column'],
+                    features=sel_features['features']
+                )
+
+                pred, explanation = executor.predict_from_query(prompt)
+                print(pred)
+                print(explanation)
+
+                job_id = str(uuid.uuid4())[:8]
+                job = {
+                    "id": job_id,
+                    "prompt": prompt,
+                    "status": "Queued",
+                    "progress": 0,
+                    "dataset": selected_data,
+                    "classification": classification
+                }
+                st.session_state.jobs.append(job)
+                st.success(f"Job '{prompt}' submitted! Check Jobs tab for progress.")
+            except Exception as e:
+                st.error(f"Error loading dataset or classifying task: {e}")
 
 def data():
     st.title("Data")
