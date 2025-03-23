@@ -1,3 +1,8 @@
 {
-
+    "titanic_data.csv": "uploaded_data/titanic_data.csv",
+    "customer_data.csv": "uploaded_data/customer_data.csv",
+    "Housing.csv": "uploaded_data/Housing.csv",
+    "buyer.csv": "uploaded_data/buyer.csv",
+    "housing.csv": "uploaded_data/housing.csv",
+    "sentiment.csv": "uploaded_data/sentiment.csv"
 }
