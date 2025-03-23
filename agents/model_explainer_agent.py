@@ -12,12 +12,13 @@ class ModelExplainerAgent:
 
     def run(self) -> str:
         explanation_prompt = f"""
-User Prompt: {self.prompt}
-Model Summary:
-{json.dumps(self.model_summary, indent=2)}
+        User Prompt: {self.prompt}
+        Model Summary:
+        {json.dumps(self.model_summary, indent=2)}
 
-Explain what the model learned, why it was chosen, and answer the prompt directly.
-"""
+        Explain what the model learned, why it was chosen, and answer the prompt directly.
+        """
+        
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[

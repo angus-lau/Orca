@@ -10,10 +10,17 @@ from models.timeseries import TimeSeriesModel
 from models.dataset import Dataset
 
 import pandas as pd
-
+import json
+import h2o
+from h2o.frame import H2OFrame
+from openai import OpenAI
+from dotenv import load_dotenv
 
 from agents.task_classifier_agent import TaskClassifierAgent
 from agents.feature_mapper_agent import FeatureMapperAgent
+
+load_dotenv()
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 class ModelExecutorAgent:
     def __init__(self, dataset, task_type: str, target_column: str, features=None):
@@ -39,27 +46,95 @@ class ModelExecutorAgent:
 
         print("✅ Model training complete")
         return self.model.save_best_model()
-    
 
-if __name__ == "__main__":
-    # Simulate a user prompt
-    prompt = "Will a 38-year-old female passenger from 1st class survive the Titanic?"
+    def predict_from_query(self, query: str):
+        try:
+            feature_agent = FeatureMapperAgent(prompt=query, dataset_columns=self.dataset.columns(), target_column=self.target_column)
+            features_info = feature_agent.run()
+            features = features_info["features"]
 
-    # Sample Titanic-like data
+            example_values = {}
+            for col in features:
+                unique_vals = self.dataset.get_data()[col].dropna().unique().tolist()
+                example_values[col] = unique_vals[:5]
+
+            feature_examples_text = "\n".join([f"{k}: example values -> {v}" for k, v in example_values.items()])
+
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant that converts user queries into structured input data for ML models."},
+                    {"role": "user", "content": f"Query: {query}\nFeatures: {features}\nMatch each feature's value to these examples as closely as possible:\n{feature_examples_text}"}
+                ],
+                functions=[{
+                    "name": "structure_input",
+                    "description": "Parse input values from user query using valid values.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {feature: {"type": "string"} for feature in features},
+                        "required": features
+                    }
+                }],
+                function_call="auto"
+            )
+
+            input_values = json.loads(response.choices[0].message.function_call.arguments)
+            df = pd.DataFrame([input_values])
+
+            for col in features:
+                train_col_dtype = self.dataset.get_data()[col].dtype
+                if train_col_dtype == "object" or str(train_col_dtype).startswith("category"):
+                    df[col] = df[col].astype("str")
+                elif str(train_col_dtype).startswith("int"):
+                    df[col] = pd.to_numeric(df[col], errors='coerce').astype("Int64")
+                elif str(train_col_dtype).startswith("float"):
+                    df[col] = pd.to_numeric(df[col], errors='coerce').astype("float")
+
+            h2o_df = H2OFrame(df)
+
+            preds = self.model.aml.leader.predict(h2o_df).as_data_frame().iloc[:, 0].tolist()
+            predicted_value = preds[0]
+
+            # Format prediction value if it's a large float
+            if isinstance(predicted_value, float):
+                formatted_prediction = f"${predicted_value:,.2f}" if predicted_value > 100 else round(predicted_value, 2)
+            else:
+                formatted_prediction = predicted_value
+
+            explanation = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are a model explanation assistant. Explain what the prediction means in human terms."},
+                    {"role": "user", "content": f"Query: {query}\nPrediction: {formatted_prediction}\nTarget Column: {self.target_column}"}
+                ]
+            ).choices[0].message.content
+
+            print("🔮 Prediction:", formatted_prediction)
+            print("🧠 LLM Explanation:", explanation)
+            return formatted_prediction, explanation
+
+        except Exception as e:
+            print("❌ Prediction failed:", str(e))
+            return None, "An error occurred while making the prediction. Please try again with a different query or check the dataset."
+
+
+if __name__ == "__main__":  
+    prompt = "Will a 60 year old man be a repeat buyer?"
+
     data = {
-        "Age": [22, 38, 26, 35, 28],
-        "Sex": ["male", "female", "female", "female", "male"],
-        "Pclass": [3, 1, 3, 1, 3],
-        "Fare": [7.25, 71.83, 7.92, 53.10, 8.05],
-        "Survived": [0, 1, 1, 1, 0]
-    }
+    "CustomerID": [101, 102, 103, 104, 105],
+    "Age": [25, 45, 32, 28, 39],
+    "Gender": ["male", "female", "female", "male", "female"],
+    "PurchaseAmount": [200, 500, 150, 300, 450],
+    "RepeatBuyer": [0, 1, 0, 1, 1]
+    } 
+
+
     df = pd.DataFrame(data)
-    df.to_csv("titanic_sample.csv", index=False)
+    df.to_csv("buyer.csv", index=False)
 
-    # Load into custom Dataset class
-    dataset = Dataset(file_path="titanic_sample.csv")
+    dataset = Dataset(file_path="buyer.csv")
 
-    # --- Step 1: Use TaskClassifierAgent ---
     task_agent = TaskClassifierAgent(prompt, dataset.columns())
     task_info = task_agent.run()
     task_type = task_info["task_type"]
@@ -68,14 +143,12 @@ if __name__ == "__main__":
     print("🎯 Target Column:", target_column)
     print("")
 
-    # --- Step 2: Use FeatureMapperAgent ---
     feature_agent = FeatureMapperAgent(prompt, dataset.columns(), target_column=target_column)
     features_info = feature_agent.run()
     features = features_info["features"]
     print("🧩 Selected Features:", features)
     print("")
 
-    # --- Step 3: Run ModelExecutorAgent ---
     executor = ModelExecutorAgent(
         dataset=dataset,
         task_type=task_type,
@@ -85,3 +158,5 @@ if __name__ == "__main__":
     model_path = executor.run()
 
     print("✅ Model saved at:", model_path)
+
+    pred, explanation = executor.predict_from_query(prompt)
