@@ -32,40 +32,33 @@ export function PlaygroundPage() {
         setPromptText(event.target.value);
     };
 
-   // When arrow is pressed, ensure both a file and prompt exist before proceeding
-   const handleSubmit = async () => {
-    if (!selectedFile) {
-      alert("Please upload a file.");
-      return;
-    }
-    if (!promptText.trim()) {
-      alert("Please enter a prompt.");
-      return;
-    }
-    // MODIFIED, NEED TO RECHECK 
-    const formData = new FormData();
-    formData.append('file', selectedFile)
-    formData.append('prompt', promptText);
+    // When arrow is pressed, ensure both a file and prompt exist before proceeding
+    const handleSubmit = async () => {
+        if (!selectedFile) {
+            alert("Please upload a file.");
+            return;
+        }
+        if (!promptText.trim()) {
+            alert("Please enter a prompt.");
+            return;
+        }
+        // MODIFIED, NEED TO RECHECK
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+        formData.append("prompt", promptText);
 
-    try {
-        const response = await fetch('http://localhost:5001/process', {
-            method: 'POST',
-            body: formData,
-        });
+        try {
+            const response = await fetch("http://localhost:5001/process", {
+                method: "POST",
+                body: formData,
+            });
 
-        const data = await response.json();
-        console.log("✅ Response from server:", data);
+            const data = await response.json();
+            console.log("✅ Response from server:", data);
         } catch (err) {
-        console.error("❌ Error uploading to backend:", err);
-    }
-  };
-
-    // Both file and prompt are provided. Process them.
-    console.log("File:", selectedFile);
-    console.log("Prompt:", promptText);
-    // Call your submission function here
-    // e.g., processSubmission(selectedFile, promptText);
-  };
+            console.error("❌ Error uploading to backend:", err);
+        }
+    };
 
     return (
         <div className="d-flex vh-100">
