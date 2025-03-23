@@ -166,3 +166,6 @@ if function_call:
 
 else:
     print("❌ No function call was returned by OpenAI.")
+
+
+model.save_best_model()
