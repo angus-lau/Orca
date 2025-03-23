@@ -46,37 +46,48 @@ def playground():
         else:
             file_path = st.session_state.datasets[selected_data]
             try:
-                if selected_data.endswith(".csv"):
-                    df = pd.read_csv(file_path)
-                    sel_ds = Dataset(st.session_state.datasets[selected_data])
-                elif selected_data.endswith(".xlsx"):
-                    df = pd.read_excel(file_path)
+                if selected_data.endswith(".csv") or selected_data.endswith(".xlsx"):
+                    sel_ds = Dataset(file_path)
                 else:
                     st.error("Unsupported file type.")
                     return
                 print(prompt)
-                classification = classify_task(prompt, sel_ds.columns())
-                sel_features = select_features(prompt, sel_ds.columns(),classification['target_column'])
 
-                executor = ModelExecutorAgent(
+                job = {
+                    "id": job_id,
+                    "prompt": prompt,
+                    "status": "In Progress",
+                    "progress": 0,
+                    "dataset": selected_data,
+                    "classification": None,
+                    "prediction": None,
+                    "explanation": None
+                }
+
+                classification = classify_task(prompt, sel_ds.columns())
+                sel_features = select_features(prompt, sel_ds.columns(), classification['target_column'])
+                
+                agent = ModelExecutorAgent(
                     dataset=sel_ds,
-                    task_type=classification["task_type"],
+                    task_type=classification['task_type'],
                     target_column=classification['target_column'],
                     features=sel_features['features']
                 )
-
-                pred, explanation = executor.predict_from_query(prompt)
+                agent.run()
+                pred, explanation = agent.predict_from_query(prompt)
                 print(pred)
-                print(explanation)
+    
 
                 job_id = str(uuid.uuid4())[:8]
                 job = {
                     "id": job_id,
                     "prompt": prompt,
-                    "status": "Queued",
-                    "progress": 0,
+                    "status": "Completed",
+                    "progress": 100,
                     "dataset": selected_data,
-                    "classification": classification
+                    "classification": classification,
+                    "prediction": pred,
+                    "explanation": explanation
                 }
                 st.session_state.jobs.append(job)
                 st.success(f"Job '{prompt}' submitted! Check Jobs tab for progress.")
