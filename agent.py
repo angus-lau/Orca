@@ -8,26 +8,26 @@ from models.dataset import Dataset
 from models.timeseries import TimeSeriesModel
 from models.nlpmodel import NLPModel
 from models.classification import Classifier
+from models.regression import Regressor  # ✅ Added Regressor import
 
+# Step 1: Load API Key
 print("🔄 Loading environment variables...")
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 
 if not api_key:
     raise ValueError("❌ OPENAI_API_KEY not found in .env file.")
-
 print("🔐 OpenAI API key loaded.")
 client = OpenAI(api_key=api_key)
 
-# Prompt and dataset
+# Step 2: Load prompt and dataset
 prompt = "What's the closing price of the Microsoft stock tomorrow?"
 print(f"🧠 Prompt: {prompt}")
-
 print("📦 Loading dataset from joblib...")
 dataset = joblib.load("persistance/microsoft.joblib")  # Instance of Dataset class
 print(f"✅ Dataset loaded with columns: {dataset.columns()}")
 
-# Define function specs
+# Step 3: Define function schemas (including Regressor)
 functions = [
     {
         "name": "train_time_series_model",
@@ -72,16 +72,33 @@ functions = [
             },
             "required": ["features", "target_column"]
         }
+    },
+    {
+        "name": "train_regression_model",
+        "description": "Train a regression model given a target column and optional feature exclusions.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "target_column": {"type": "string", "description": "The numeric column to predict"},
+                "exclude_columns": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Optional columns to exclude from training"
+                }
+            },
+            "required": ["target_column"]
+        }
     }
 ]
 
+# Step 4: Send request to OpenAI
 print("🤖 Sending prompt and dataset columns to OpenAI agent...")
 response = client.chat.completions.create(
     model="gpt-3.5-turbo",
     messages=[
         {
             "role": "system",
-            "content": "You are an AutoML assistant. Based on a user's question and dataset, select the right ML task (classification, NLP, or time-series)."
+            "content": "You are an AutoML assistant. Based on a user's question and dataset, select the right ML task (classification, regression, NLP, or time-series)."
         },
         {
             "role": "user",
@@ -92,6 +109,7 @@ response = client.chat.completions.create(
     function_call="auto"
 )
 
+# Step 5: Handle function call
 function_call = response.choices[0].message.function_call
 
 if function_call:
@@ -134,6 +152,17 @@ if function_call:
         print("🚀 Training Classifier...")
         model.train_model()
         print("✅ Classifier training complete.")
+
+    elif fn_name == "train_regression_model":
+        print("📈 Initializing Regressor...")
+        model = Regressor(
+            dataset=dataset.get_data(),  # Assuming dataset has a .get_data() method returning pandas DataFrame
+            target=args["target_column"],
+            exclude=args.get("exclude_columns", [])
+        )
+        print("🚀 Training Regressor...")
+        model.train_model()
+        print("✅ Regressor training complete.")
 
 else:
     print("❌ No function call was returned by OpenAI.")
