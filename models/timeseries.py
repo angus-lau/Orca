@@ -3,6 +3,7 @@ import h2o
 from h2o.automl import H2OAutoML
 from typing import List, Optional, Union
 from datetime import timedelta
+import os
 
 class TimeSeriesModel:
     def __init__(
@@ -62,7 +63,53 @@ class TimeSeriesModel:
         self.aml = H2OAutoML(max_models=self.max_models, seed=self.seed)
         self.aml.train(x=self.features, y=self.target_column, training_frame=self.h2o_df)
         self.trained = True
-        print("Training complete.")
+        print("✅ Training complete.")
+        print("🏆 Best model ID:", self.aml.leader.model_id)
+
+    
+    def save_best_model(self, path: str = "saved_models") -> str:
+        """
+        Saves the best H2O model (leader) to the given directory.
+
+        :param path: Directory where the model will be saved.
+        :return: Full path to saved model directory.
+        """
+        if not self.trained:
+            raise RuntimeError("⚠️ Model not trained yet!")
+
+        os.makedirs(path, exist_ok=True)
+        model_path = h2o.save_model(model=self.aml.leader, path=path, force=True)
+        print(f"📦 Model saved at: {model_path}")
+        return model_path
+    
+    def get_leader_summary(self) -> dict:
+        """
+        Returns summary stats of the best (leader) model.
+
+        :return: Dictionary with model ID, type, and training metrics.
+        """
+        if not self.trained:
+            raise RuntimeError("⚠️ Model not trained yet!")
+
+        leader = self.aml.leader
+        model_type = leader.algo
+        model_id = leader.model_id
+        training_metrics = leader.model_performance()
+
+        summary = {
+            "model_id": model_id,
+            "algorithm": model_type,
+            "r2": training_metrics.r2(),
+            "mse": training_metrics.mse(),
+            "rmse": training_metrics.rmse(),
+            "mae": training_metrics.mae(),
+        }
+
+        print("📊 Leader Model Summary:")
+        for k, v in summary.items():
+            print(f"  {k}: {v}")
+
+        return summary
 
     def forecast(self, steps: int = 1) -> List[float]:
         """

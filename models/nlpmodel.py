@@ -1,9 +1,9 @@
+import os
 import h2o
-from h2o.automl import H2OAutoML
 import pandas as pd
+from typing import List, Union, Optional
+from h2o.automl import H2OAutoML
 from sklearn.feature_extraction.text import TfidfVectorizer
-from typing import List, Union
-
 
 class NLPModel:
     def __init__(
@@ -16,17 +16,6 @@ class NLPModel:
         max_features: int = 500,
         seed: int = 42
     ):
-        """
-        NLP model using TF-IDF Bag-of-Words + H2O AutoML.
-
-        :param dataset: Instance of your Dataset class.
-        :param text_columns: List of text columns to combine as input.
-        :param target_column: The column to predict.
-        :param max_models: Number of models to train.
-        :param max_runtime_secs: Time budget (in seconds) for AutoML.
-        :param max_features: Max TF-IDF features.
-        :param seed: Random seed for reproducibility.
-        """
         self.dataset = dataset
         self.text_columns = text_columns
         self.target_column = target_column
@@ -38,13 +27,9 @@ class NLPModel:
         self.trained = False
         self.vectorizer = None
         self.feature_names = []
-
         self._prepare_data()
 
     def _prepare_data(self):
-        """
-        Prepares dataset: combines text, vectorizes with TF-IDF, creates H2O frame.
-        """
         df = self.dataset.get_data().copy()
         df = df.dropna(subset=[self.target_column])
 
@@ -53,43 +38,31 @@ class NLPModel:
 
         df["__combined_text__"] = df[self.text_columns].agg(" ".join, axis=1)
 
-        # TF-IDF vectorization
         self.vectorizer = TfidfVectorizer(max_features=self.max_features)
         tfidf_matrix = self.vectorizer.fit_transform(df["__combined_text__"])
 
-        # Convert sparse matrix to DataFrame
         tfidf_df = pd.DataFrame(
             tfidf_matrix.toarray(),
             columns=self.vectorizer.get_feature_names_out()
         )
         self.feature_names = tfidf_df.columns.tolist()
 
-        # Combine with target
         tfidf_df[self.target_column] = df[self.target_column].values
 
-        # Init H2O
         h2o.init()
         self.h2o_df = h2o.H2OFrame(tfidf_df)
 
-        # Set correct target type
         if self._is_classification(df):
-    # 👇 Cast to string BEFORE H2O conversion
             self.h2o_df[self.target_column] = self.h2o_df[self.target_column].ascharacter()
             self.h2o_df[self.target_column] = self.h2o_df[self.target_column].asfactor()
         else:
             self.h2o_df[self.target_column] = self.h2o_df[self.target_column].asnumeric()
 
     def _is_classification(self, df) -> bool:
-        """
-        Determines if the target is categorical.
-        """
         dtype = df[self.target_column].dtype
         return dtype == "object" or str(dtype).startswith("category")
 
     def train(self):
-        """
-        Trains H2O AutoML model.
-        """
         self.aml = H2OAutoML(
             max_models=self.max_models,
             max_runtime_secs=self.max_runtime_secs,
@@ -102,22 +75,55 @@ class NLPModel:
         )
         self.trained = True
         print("✅ Training complete.")
+        print("🏆 Best model ID:", self.aml.leader.model_id)
+
+    def save_best_model(self, path: str = "saved_models", model_name: Optional[str] = None) -> str:
+        if not self.trained:
+            raise RuntimeError("⚠️ Model not trained yet!")
+
+        os.makedirs(path, exist_ok=True)
+        model_path = h2o.save_model(model=self.aml.leader, path=path, force=True)
+
+        if model_name:
+            new_path = os.path.join(path, model_name)
+            os.rename(model_path, new_path)
+            print(f"📦 Model saved as: {new_path}")
+            return new_path
+
+        print(f"📦 Model saved at: {model_path}")
+        return model_path
+
+    def get_leader_summary(self) -> dict:
+        if not self.trained:
+            raise RuntimeError("⚠️ Model not trained yet!")
+
+        leader = self.aml.leader
+        model_type = leader.algo
+        model_id = leader.model_id
+        perf = leader.model_performance()
+
+        summary = {
+            "model_id": model_id,
+            "algorithm": model_type,
+            "r2": perf.r2() if hasattr(perf, "r2") else None,
+            "mse": perf.mse(),
+            "rmse": perf.rmse(),
+            "mae": perf.mae(),
+            "logloss": perf.logloss() if hasattr(perf, "logloss") else None,
+        }
+
+        print("📊 Leader Model Summary:")
+        for k, v in summary.items():
+            print(f"  {k}: {v}")
+
+        return summary
 
     def leaderboard(self):
-        """
-        Returns leaderboard of models.
-        """
         if not self.trained:
             raise RuntimeError("⚠️ Train the model first!")
         return self.aml.leaderboard
 
     def predict(self, text_list: List[str]) -> List[Union[str, float]]:
-        """
-        Predicts outcomes from raw text input.
-
-        :param text_list: List of raw input strings.
-        :return: List of predicted values.
-        """
         if not self.trained:
             raise RuntimeError("⚠️ Model not trained!")
 
