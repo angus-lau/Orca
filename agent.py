@@ -24,7 +24,7 @@ client = OpenAI(api_key=api_key)
 prompt = "What's the closing price of the Microsoft stock tomorrow?"
 print(f"🧠 Prompt: {prompt}")
 print("📦 Loading dataset from joblib...")
-dataset = joblib.load("persistance/microsoft.joblib")  # Instance of Dataset class
+dataset = joblib.load("persistance/sentiment.joblib")  # Instance of Dataset class
 print(f"✅ Dataset loaded with columns: {dataset.columns()}")
 
 # Step 3: Define function schemas (including Regressor)
