@@ -31,7 +31,6 @@ export function PlaygroundPage() {
         setPromptText(event.target.value);
     };
 
-<<<<<<< HEAD
    // When arrow is pressed, ensure both a file and prompt exist before proceeding
    const handleSubmit = async () => {
     if (!selectedFile) {
@@ -66,24 +65,6 @@ export function PlaygroundPage() {
     // Call your submission function here
     // e.g., processSubmission(selectedFile, promptText);
   };
-=======
-    // When arrow is pressed, ensure both a file and prompt exist before proceeding
-    const handleSubmit = () => {
-        if (!selectedFile) {
-            alert("Please upload a file.");
-            return;
-        }
-        if (!promptText.trim()) {
-            alert("Please enter a prompt.");
-            return;
-        }
-        // Both file and prompt are provided. Process them.
-        console.log("File:", selectedFile);
-        console.log("Prompt:", promptText);
-        // Call your submission function here
-        // e.g., processSubmission(selectedFile, promptText);
-    };
->>>>>>> eafe0de7f6e9e430c176db9152cec27d618adf30
 
     return (
         <div className="d-flex vh-100">
