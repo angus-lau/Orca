@@ -3,8 +3,53 @@ import orcaLogo from "./orcaLogo.png";
 // import React from "react";
 import { FaUpload, FaArrowRight } from "react-icons/fa";
 import { Link } from "react-router-dom";
+import React, { useRef, useState } from "react";
+
 
 export function PlaygroundPage() {
+    
+    const fileInputRef = useRef(null);
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [promptText, setPromptText] = useState("");
+
+  // Function to trigger the hidden file input when button is clicked
+  const handleUploadClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  // Handler to do something with the selected file
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+        setSelectedFile(file);
+      // You can add further processing here, such as uploading the file to a server.
+    }
+  };
+
+  // Handle prompt text change
+  const handlePromptChange = (event) => {
+    setPromptText(event.target.value);
+  };
+
+   // When arrow is pressed, ensure both a file and prompt exist before proceeding
+   const handleSubmit = () => {
+    if (!selectedFile) {
+      alert("Please upload a file.");
+      return;
+    }
+    if (!promptText.trim()) {
+      alert("Please enter a prompt.");
+      return;
+    }
+    // Both file and prompt are provided. Process them.
+    console.log("File:", selectedFile);
+    console.log("Prompt:", promptText);
+    // Call your submission function here
+    // e.g., processSubmission(selectedFile, promptText);
+  };
+
     return (
         <div className="d-flex vh-100">
             {/* Sidebar */}
@@ -50,24 +95,48 @@ export function PlaygroundPage() {
                 <div className="d-flex flex-column align-items-center justify-content-center flex-grow-1">
                     <h1 className="mb-4">What Can I Help With?</h1>
 
-                    {/* Search Bar */}
+                    {/* Search / Submission Bar */}
+                    <div className="d-flex flex-column align-items-center w-100">
                     <div className="d-flex border rounded-pill overflow-hidden shadow-sm w-50">
                         {/* Upload button */}
-                        <button className="btn btn-light px-3">
+                        <button className="btn btn-light px-3"
+                            onClick={handleUploadClick}>
                             <FaUpload />
                         </button>
+                        
+                        {/* Hidden file input */}
+                        <input
+                        type="file"
+                        ref={fileInputRef}
+                        style={{ display: "none" }}
+                        onChange={handleFileChange}
+                        />
+
 
                         {/* Search Input */}
                         <input
                             type="text"
                             className="form-control border-0"
                             placeholder="Type something..."
+                            value={promptText}
+                            onChange={handlePromptChange}
                         />
 
                         {/* Arrow button */}
-                        <button className="btn btn-light px-3">
+                        <button className="btn btn-light px-3" onClick={handleSubmit}>
                             <FaArrowRight />
                         </button>
+                        </div>
+
+                        {/* File name bubble */}
+                        {selectedFile && (
+                            <div
+                            className="mt-2 px-3 py-1 bg-secondary text-white rounded"
+                            style={{ fontSize: "0.9rem" }}
+                             >
+                            {selectedFile.name}
+                        </div>
+                        )}
                     </div>
                 </div>
             </main>
