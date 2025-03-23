@@ -1,8 +1,8 @@
 import orcaLogo from "./orcaLogo.png";
-// import orcaLogo from "orcasrcPagesorcaLogo.png";
 // import "bootstrap/dist/css/bootstrap.min.css";
 // import React from "react";
 import { FaUpload, FaArrowRight } from "react-icons/fa";
+import { Link } from "react-router-dom";
 
 export function PlaygroundPage() {
     return (
@@ -25,10 +25,17 @@ export function PlaygroundPage() {
 
                 {/* Sidebar Menu */}
                 <nav className="d-flex flex-column gap-2">
-                    <button className="btn btn-light text-start">Menu</button>
-                    <button className="btn btn-light text-start">Jobs</button>
-                    <button className="btn btn-light text-start">Data</button>
-                    <button className="btn btn-light text-start">Deploy</button>
+                    <h6>Menu</h6>
+                    {/* <button className="btn btn-light text-start">Jobs</button> */}
+                    <Link to="jobs" className="btn btn-light text-start">
+                        Jobs
+                    </Link>
+                    <Link to="data" className="btn btn-light text-start">
+                        Data
+                    </Link>
+                    <Link to="deploy" className="btn btn-light text-start">
+                        Deploy
+                    </Link>
                 </nav>
             </aside>
 
