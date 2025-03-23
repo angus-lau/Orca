@@ -1,0 +1,6 @@
+CustomerID,Age,Gender,PurchaseAmount,RepeatBuyer
+101,25,male,200,0
+102,45,female,500,1
+103,32,female,150,0
+104,28,male,300,1
+105,39,female,450,1
