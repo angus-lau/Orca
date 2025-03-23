@@ -40,6 +40,3 @@ def upload_file(file_path=test_file_path):
     ).execute()
 
     print(f"Uploaded file ID: {file.get('id')}")
-
-# Run upload for test file
-upload_file()

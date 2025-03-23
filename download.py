@@ -88,6 +88,3 @@ def main():
         file_id = selected['id']
         download_path = f"downloads/{selected['name']}"
         download_file(file_id, download_path)
-
-if __name__ == "__main__":
-    main()
