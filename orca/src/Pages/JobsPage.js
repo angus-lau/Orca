@@ -42,7 +42,7 @@ export function JobsPage() {
             <main className="flex-grow-1 p-4">
                 {/* Header */}
                 <header className="mb-4 border-bottom pb-2">
-                    <h1>Jobs Dashboard</h1>
+                    <h1>Jobs</h1>
                 </header>
 
                 {/* Page content goes here */}
