@@ -37,6 +37,15 @@ export function DataPage() {
                     </Link>
                 </nav>
             </aside>
+            {/* Main Content */}
+            <main className="flex-grow-1 p-4">
+                {/* Header */}
+                <header className="mb-4 border-bottom pb-2">
+                    <h1>Data</h1>
+                </header>
+
+                {/* Page content goes here */}
+            </main>
         </div>
     );
 }

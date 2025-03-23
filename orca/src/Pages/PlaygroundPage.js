@@ -1,4 +1,5 @@
 import orcaLogo from "./orcaLogo.png";
+import jobsLogo from "./jobsLogo.png";
 // import "bootstrap/dist/css/bootstrap.min.css";
 // import React from "react";
 import { FaUpload, FaArrowRight } from "react-icons/fa";
