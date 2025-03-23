@@ -34,7 +34,7 @@ export function PlaygroundPage() {
   };
 
    // When arrow is pressed, ensure both a file and prompt exist before proceeding
-   const handleSubmit = () => {
+   const handleSubmit = async () => {
     if (!selectedFile) {
       alert("Please upload a file.");
       return;
@@ -43,6 +43,24 @@ export function PlaygroundPage() {
       alert("Please enter a prompt.");
       return;
     }
+    // MODIFIED, NEED TO RECHECK 
+    const formData = new FormData();
+    formData.append('file', selectedFile)
+    formData.append('prompt', promptText);
+
+    try {
+        const response = await fetch('http://localhost:5001/process', {
+            method: 'POST',
+            body: formData,
+        });
+
+        const data = await response.json();
+        console.log("✅ Response from server:", data);
+        } catch (err) {
+        console.error("❌ Error uploading to backend:", err);
+    }
+  };
+
     // Both file and prompt are provided. Process them.
     console.log("File:", selectedFile);
     console.log("Prompt:", promptText);
