@@ -48,7 +48,7 @@ class TaskClassifierAgent:
             return json.loads(response.choices[0].message.function_call.arguments)
 
         except Exception as e:
-            print("❌ Failed to classify task:", str(e))
+            print("Failed to classify task:", str(e))
             return {"task_type": "unknown", "target_column": None}
 
 
