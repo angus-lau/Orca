@@ -152,5 +152,5 @@ class TimeSeriesModel:
         if self.trained:
             return self.aml.leaderboard
         else:
-            print("Model not trained yet.")
+            print("⚠️ Model not trained yet.")
             return None
