@@ -246,7 +246,7 @@ def jobs():
         with st.container():
             st.markdown(f"""
             <div class="job-card">
-                <div class="job-title">🔹 {job['prompt']}</div>
+                <div class="job-title">{job['prompt']}</div>
                 <div class="job-meta">Job ID: <code>{job['id']}</code> | Dataset: <strong>{job['dataset']}</strong></div>
                 <div class="job-status">Status: {job['status']}</div>
             </div>
