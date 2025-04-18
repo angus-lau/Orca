@@ -54,9 +54,9 @@ export function PlaygroundPage() {
             });
 
             const data = await response.json();
-            console.log("✅ Response from server:", data);
+            console.log("Response from server:", data);
         } catch (err) {
-            console.error("❌ Error uploading to backend:", err);
+            console.error("Error uploading to backend:", err);
         }
     };
 
